@@ -3,82 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClearPath - Celebration Edition</title>
+    <title>ClearPath - Philosopher Edition</title>
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Philosopher:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
     <style>
         :root { 
-            --primary: #2e7d32; --primary-light: #e8f5e9;
-            --danger: #d32f2f; --bg: #f8faf9; 
-            --text-main: #1a1c1b; --text-muted: #5f6368;
-            --accent: #fbc02d;
+            /* Your New Purple Palette */
+            --primary: #6a1b9a;        /* Darkish Purple */
+            --primary-light: #f3e5f5;  /* Soft Lavender */
+            --danger: #d32f2f; 
+            --bg: #fdfbff; 
+            --card-bg: #ffffff;
+            --text-main: #2a2230; 
+            --text-muted: #6b5b7b;
+            --accent: #ffd54f;        /* Gold Milestone Bar */
+            --border: rgba(106, 27, 154, 0.1);
+            --chip-bg: #f8f0fc;
+        }
+
+        body.dark-mode {
+            --bg: #1a1621;
+            --card-bg: #251f2e;
+            --text-main: #e1ddec;
+            --text-muted: #a79cb5;
+            --primary-light: #3c2450;
+            --border: rgba(255,255,255,0.1);
+            --chip-bg: #322a3d;
         }
         
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
         body { 
-            font-family: 'Segoe UI', Roboto, sans-serif; 
+            /* Applying the Philosopher Font */
+            font-family: 'Philosopher', sans-serif; 
             background: var(--bg); color: var(--text-main); 
             margin: 0; padding: 20px; padding-bottom: 120px;
             display: flex; flex-direction: column; align-items: center;
+            transition: background 0.3s, color 0.3s;
         }
 
         .container { width: 100%; max-width: 480px; }
-        .card { 
-            background: white; padding: 20px; border-radius: 24px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.03); margin-bottom: 20px; 
-            border: 1px solid rgba(0,0,0,0.05);
+        
+        .theme-toggle {
+            position: absolute; top: 15px; right: 15px;
+            background: rgba(255,255,255,0.2); border: none;
+            color: white; padding: 8px; border-radius: 50%;
+            cursor: pointer; font-size: 1.2rem; line-height: 1;
         }
 
-        .hero { text-align: center; background: linear-gradient(135deg, #2e7d32, #43a047); color: white; padding: 30px 20px; position: relative; overflow: hidden; }
-        .counter-num { font-size: 3.5rem; display: block; line-height: 1; margin-bottom: 5px; font-weight: 800; }
+        .card { 
+            background: var(--card-bg); padding: 20px; border-radius: 24px; 
+            box-shadow: 0 10px 25px rgba(106, 27, 154, 0.05); margin-bottom: 20px; 
+            border: 1px solid var(--border);
+        }
+
+        .hero { 
+            text-align: center; 
+            background: linear-gradient(135deg, #6a1b9a, #4a148c); 
+            color: white; padding: 35px 20px; position: relative; overflow: hidden;
+            border-radius: 24px;
+        }
+        
+        .counter-num { font-size: 3.5rem; display: block; line-height: 1; margin-bottom: 5px; font-weight: 700; }
         
         .progress-container { background: rgba(255,255,255,0.2); height: 12px; border-radius: 10px; margin-top: 15px; overflow: hidden; }
         .progress-bar { background: var(--accent); height: 100%; width: 0%; transition: width 1s ease-in-out; }
 
-        .affirmation-card { background: #fff9c4; border: 1px solid #fff59d; text-align: center; color: #795548; font-style: italic; }
+        .affirmation-card { 
+            background: var(--card-bg); border: 1.5px solid var(--primary); 
+            text-align: center; color: var(--text-main); font-style: italic; 
+        }
         
         .chip-group { display: flex; gap: 8px; flex-wrap: wrap; margin: 15px 0; }
-        .chip { padding: 10px 18px; border-radius: 50px; background: #f1f3f4; font-size: 0.9rem; cursor: pointer; border: 2px solid transparent; }
-        .chip.selected { background: var(--primary-light); border-color: var(--primary); color: var(--primary); font-weight: 600; }
+        .chip { padding: 10px 18px; border-radius: 50px; background: var(--chip-bg); font-size: 0.9rem; cursor: pointer; border: 2px solid transparent; color: var(--text-main); }
+        .chip.selected { background: var(--primary-light); border-color: var(--primary); color: var(--primary); font-weight: 700; }
         
-        textarea { width: 100%; border: 1px solid #dadce0; border-radius: 16px; padding: 16px; font-size: 1rem; margin-top: 10px; resize: none; outline: none; }
-        .btn-main { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1rem; font-weight: 600; margin-top: 15px; cursor: pointer; }
-
-        .sos-btn { position: fixed; bottom: 20px; right: 20px; left: 20px; background: var(--danger); color: white; text-align: center; padding: 18px; border-radius: 50px; font-weight: 800; text-transform: uppercase; z-index: 100; box-shadow: 0 8px 20px rgba(211, 47, 47, 0.4); }
-
-        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 200; padding: 20px; }
-        .modal { background: white; border-radius: 24px; padding: 24px; width: 100%; max-width: 400px; }
+        textarea { width: 100%; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); border-radius: 16px; padding: 16px; font-size: 1rem; margin-top: 10px; resize: none; outline: none; font-family: 'Philosopher', sans-serif; }
         
-        .entry { background: white; padding: 16px; border-radius: 16px; margin-bottom: 12px; border-left: 6px solid var(--primary); position: relative; }
-        .del-entry { position: absolute; top: 10px; right: 10px; color: #ccc; cursor: pointer; }
+        .btn-main { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: 700; margin-top: 15px; cursor: pointer; font-family: 'Philosopher', sans-serif; }
 
-        .goal-label { font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; color: #666; display: block; }
-        .goal-input { border: 1px solid #ddd; padding: 5px; border-radius: 8px; width: 60px; text-align: center; }
+        .sos-btn { position: fixed; bottom: 20px; right: 20px; left: 20px; background: var(--danger); color: white; text-align: center; padding: 18px; border-radius: 50px; font-weight: 700; text-transform: uppercase; z-index: 100; box-shadow: 0 8px 20px rgba(211, 47, 47, 0.4); font-family: 'Philosopher', sans-serif; letter-spacing: 1px; }
+
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 200; padding: 20px; }
+        .modal { background: var(--card-bg); color: var(--text-main); border-radius: 24px; padding: 24px; width: 100%; max-width: 400px; text-align: center; }
+        
+        .entry { background: var(--card-bg); padding: 16px; border-radius: 16px; margin-bottom: 12px; border-left: 6px solid var(--primary); position: relative; text-align: left; }
+        .del-entry { position: absolute; top: 10px; right: 10px; color: var(--text-muted); cursor: pointer; }
+
+        .goal-input { border: 1px solid var(--border); background: var(--bg); color: var(--text-main); padding: 5px; border-radius: 8px; width: 60px; text-align: center; font-family: 'Philosopher', sans-serif; }
     </style>
 </head>
-<body>
+<body id="appBody">
 
 <div class="container">
-    <div class="card hero" id="heroCard">
+    <div class="card hero">
+        <button class="theme-toggle" onclick="toggleDarkMode()">🌓</button>
         <span id="daysCounter" class="counter-num">0</span>
-        <div style="opacity: 0.9; font-weight: 500;">DAYS SOBER</div>
+        <div style="opacity: 0.9; font-weight: 700; letter-spacing: 1px;">DAYS CLEAN</div>
         
         <div class="progress-container">
             <div id="progressBar" class="progress-bar"></div>
         </div>
-        <div id="goalStatus" style="font-size: 0.8rem; margin-top: 8px; opacity: 0.9;">Progress to Milestone</div>
+        <div id="goalStatus" style="font-size: 0.9rem; margin-top: 8px; opacity: 0.9;">Milestone Progress</div>
 
         <input type="date" id="datePicker" onchange="updateStartDate(this.value)" 
-               style="margin-top:15px; background: rgba(255,255,255,0.2); border:none; color:white; padding:5px 10px; border-radius:8px; font-size: 0.8rem;">
+               style="margin-top:15px; background: rgba(255,255,255,0.2); border:none; color:white; padding:5px 10px; border-radius:8px; font-family: 'Philosopher', sans-serif;">
     </div>
 
     <div class="card affirmation-card">
-        <div id="affirmationText" style="font-size: 1.1rem; line-height: 1.4;">"One day at a time."</div>
+        <div id="affirmationText">"One day at a time."</div>
     </div>
 
     <div class="card">
-        <h3>Daily Check-in</h3>
+        <h3 style="margin-top:0">Daily Check-in</h3>
         <div class="chip-group" id="moodPicker">
             <div class="chip" onclick="this.classList.toggle('selected')">😊 Great</div>
             <div class="chip" onclick="this.classList.toggle('selected')">😐 Okay</div>
@@ -87,26 +129,31 @@
             <div class="chip" onclick="this.classList.toggle('selected')">👥 Lonely</div>
             <div class="chip" onclick="this.classList.toggle('selected')">😴 Tired</div>
         </div>
-        <textarea id="noteContent" rows="3" placeholder="Notes or triggers..."></textarea>
+        <textarea id="noteContent" rows="3" placeholder="What's on your mind?"></textarea>
         <button class="btn-main" onclick="saveEntry()">Save Entry</button>
     </div>
 
-    <div class="card">
-        <label class="goal-label">Next Milestone (Days):</label>
-        <input type="number" id="goalInput" class="goal-input" value="30" onchange="updateGoal(this.value)">
+    <div class="card" style="display: flex; align-items: center; justify-content: space-between;">
+        <span style="font-weight: 700;">Next Milestone:</span>
+        <div>
+            <input type="number" id="goalInput" class="goal-input" value="30" onchange="updateGoal(this.value)">
+            <span style="margin-left: 5px;">Days</span>
+        </div>
     </div>
 
     <div id="history"></div>
+    <center><button onclick="exportData()" style="background:none; border:none; color:var(--text-muted); font-size:0.75rem; margin-top:20px; font-family: 'Philosopher', sans-serif;">Download Data Backup</button></center>
 </div>
 
 <div class="sos-btn" onclick="toggleSOS(true)">SOS Help</div>
 
 <div class="overlay" id="sosOverlay" onclick="toggleSOS(false)">
     <div class="modal" onclick="event.stopPropagation()">
-        <h2 style="color:var(--danger)">Stay Strong</h2>
-        <p>1. <strong>HALT:</strong> Hungry? Angry? Lonely? Tired?</p>
-        <p>2. <strong>Breathe:</strong> 4s In, 7s Hold, 8s Out.</p>
-        <button class="btn-main" style="background:#444" onclick="toggleSOS(false)">Close</button>
+        <h2 style="color:var(--danger)">Urge Surfing</h2>
+        <p>This feeling is temporary. You are in control.</p>
+        <p><strong>HALT:</strong> Hungry? Angry? Lonely? Tired?</p>
+        <p><strong>Breathe:</strong> 4s In, 7s Hold, 8s Out.</p>
+        <button class="btn-main" onclick="toggleSOS(false)">Stay Strong</button>
     </div>
 </div>
 
@@ -114,8 +161,7 @@
     const affirmations = [
         "I am stronger than my strongest urge.", "Recovery is a journey, not a destination.",
         "I choose my health today.", "My past does not define my future.",
-        "Progress, not perfection.", "I am worthy of a life free from addiction.",
-        "One day, one hour, one minute at a time."
+        "Progress, not perfection.", "I am creating a life I don't need to escape from."
     ];
 
     let entries = JSON.parse(localStorage.getItem('cp_entries')) || [];
@@ -123,11 +169,19 @@
     let goalDays = localStorage.getItem('cp_goal') || 30;
 
     function init() {
+        if (localStorage.getItem('theme') === 'dark') {
+            document.getElementById('appBody').classList.add('dark-mode');
+        }
         document.getElementById('datePicker').value = startDate;
         document.getElementById('goalInput').value = goalDays;
         updateDisplay();
         render();
         setDailyAffirmation();
+    }
+
+    function toggleDarkMode() {
+        const isDark = document.getElementById('appBody').classList.toggle('dark-mode');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
     }
 
     function setDailyAffirmation() {
@@ -154,25 +208,17 @@
         updateDisplay();
     }
 
-        function updateDisplay() {
+    function updateDisplay() {
         const diff = new Date() - new Date(startDate);
         const days = Math.max(0, Math.floor(diff / 86400000));
         document.getElementById('daysCounter').innerText = days;
         
-        // Fix: Handle 0 goal to avoid NaN%
-        let percent = 0;
-        if (goalDays > 0) {
-            percent = Math.min(100, (days / goalDays) * 100);
-        } else {
-            percent = 100; // If goal is 0, you've already hit it!
-        }
-        
+        let percent = goalDays > 0 ? Math.min(100, (days / goalDays) * 100) : 100;
         document.getElementById('progressBar').style.width = percent + "%";
-        document.getElementById('goalStatus').innerText = `Progress to ${goalDays} Days (${Math.round(percent)}%)`;
+        document.getElementById('goalStatus').innerText = `${Math.round(percent)}% to ${goalDays} Days`;
 
-        // Celebrate if goal hit!
         if (percent >= 100 && localStorage.getItem('lastCelebrated') != goalDays) {
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#6a1b9a', '#ffd54f', '#ffffff'] });
             localStorage.setItem('lastCelebrated', goalDays);
         }
     }
@@ -196,6 +242,16 @@
         }
     }
 
+    function exportData() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(entries));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "clearpath_backup.json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    }
+
     function render() {
         const container = document.getElementById('history');
         container.innerHTML = '<h3 style="margin-top:20px; color:var(--text-muted)">History</h3>';
@@ -205,8 +261,8 @@
             div.innerHTML = `
                 <span class="del-entry" onclick="deleteEntry(${e.id})">✕</span>
                 <div style="font-size:0.8rem; color:var(--text-muted);">${e.date}</div>
-                <div style="font-weight:600; color:var(--primary);">${e.moods.join(' · ')}</div>
-                <div style="margin-top:6px;">${e.text}</div>
+                <div style="font-weight:700; color:var(--primary);">${e.moods.join(' · ')}</div>
+                <div style="margin-top:6px; line-height: 1.5;">${e.text}</div>
             `;
             container.appendChild(div);
         });
