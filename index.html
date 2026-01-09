@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClearPath - Professional Sobriety Tool</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <style>
+        :root { 
+            --primary: #2e7d32; --primary-light: #e8f5e9;
+            --danger: #d32f2f; --bg: #f8faf9; 
+            --text-main: #1a1c1b; --text-muted: #5f6368;
+        }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background: var(--bg); color: var(--text-main); 
+            margin: 0; padding: 20px; padding-bottom: 120px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .container { width: 100%; max-width: 480px; }
+        .card { 
+            background: white; padding: 24px; border-radius: 24px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.03); margin-bottom: 20px; 
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .hero { text-align: center; background: linear-gradient(135deg, #2e7d32, #43a047); color: white; }
+        .counter-num { font-size: 3.5rem; display: block; line-height: 1; margin-bottom: 5px; font-weight: 800; }
+        
+        .chip-group { display: flex; gap: 8px; flex-wrap: wrap; margin: 15px 0; }
+        .chip { 
+            padding: 10px 18px; border-radius: 50px; background: #f1f3f4; 
+            font-size: 0.9rem; cursor: pointer; border: 2px solid transparent;
+        }
+        .chip.selected { background: var(--primary-light); border-color: var(--primary); color: var(--primary); font-weight: 600; }
+        
+        textarea { 
+            width: 100%; border: 1px solid #dadce0; border-radius: 16px; 
+            padding: 16px; font-size: 1rem; margin-top: 10px; resize: none; outline: none;
+        }
+
+        .btn-main { 
+            width: 100%; background: var(--primary); color: white; border: none; 
+            padding: 16px; border-radius: 16px; font-size: 1rem; font-weight: 600; 
+            margin-top: 15px; cursor: pointer;
+        }
+
+        .sos-btn { 
+            position: fixed; bottom: 20px; right: 20px; left: 20px;
+            background: var(--danger); color: white; text-align: center;
+            padding: 18px; border-radius: 50px; font-weight: 800; text-transform: uppercase;
+            box-shadow: 0 8px 20px rgba(211, 47, 47, 0.4); z-index: 100; cursor: pointer;
+        }
+
+        .overlay { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); 
+            display: none; justify-content: center; align-items: center; z-index: 200; padding: 20px;
+        }
+        .modal { background: white; border-radius: 24px; padding: 24px; width: 100%; max-width: 400px; }
+        
+        .entry { background: white; padding: 16px; border-radius: 16px; margin-bottom: 12px; border-left: 6px solid var(--primary); position: relative; }
+        .del-entry { position: absolute; top: 10px; right: 10px; color: #ccc; cursor: pointer; }
+
+        .backup-btn { background: none; border: 1px solid #ccc; color: #888; padding: 8px; border-radius: 8px; margin-top: 20px; font-size: 0.8rem; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card hero">
+        <span id="daysCounter" class="counter-num">0</span>
+        <div style="opacity: 0.9; font-weight: 500;">DAYS SOBER</div>
+        <input type="date" id="datePicker" onchange="updateStartDate(this.value)" 
+               style="margin-top:15px; background: rgba(255,255,255,0.2); border:none; color:white; padding:5px 10px; border-radius:8px;">
+    </div>
+
+    <div class="card">
+        <h3>Daily Check-in</h3>
+        <div class="chip-group" id="moodPicker">
+            <div class="chip" onclick="this.classList.toggle('selected')">😊 Great</div>
+            <div class="chip" onclick="this.classList.toggle('selected')">😐 Okay</div>
+            <div class="chip" onclick="this.classList.toggle('selected')">😰 Anxious</div>
+            <div class="chip" onclick="this.classList.toggle('selected')">💢 Angry</div>
+            <div class="chip" onclick="this.classList.toggle('selected')">👥 Lonely</div>
+            <div class="chip" onclick="this.classList.toggle('selected')">😴 Tired</div>
+        </div>
+        <textarea id="noteContent" rows="3" placeholder="What's on your mind?"></textarea>
+        <button class="btn-main" onclick="saveEntry()">Save Entry</button>
+    </div>
+
+    <div id="history"></div>
+    
+    <center>
+        <button class="backup-btn" onclick="exportData()">📥 Download My Backup</button>
+    </center>
+</div>
+
+<div class="sos-btn" onclick="toggleSOS(true)">SOS Help</div>
+
+<div class="overlay" id="sosOverlay" onclick="toggleSOS(false)">
+    <div class="modal" onclick="event.stopPropagation()">
+        <h2 style="color:var(--danger)">Urge Surfing</h2>
+        <p>Cravings usually last 15–30 minutes. Let's get through this.</p>
+        <p>1. <strong>Check HALT:</strong> Hungry? Angry? Lonely? Tired?</p>
+        <p>2. <strong>Breathe:</strong> 4s In, 7s Hold, 8s Out.</p>
+        <button class="btn-main" style="background:#444" onclick="toggleSOS(false)">Close</button>
+    </div>
+</div>
+
+<script>
+    let entries = JSON.parse(localStorage.getItem('cp_entries')) || [];
+    let startDate = localStorage.getItem('cp_date') || new Date().toISOString().split('T')[0];
+
+    function init() {
+        document.getElementById('datePicker').value = startDate;
+        updateDisplay();
+        render();
+    }
+
+    function toggleSOS(show) { document.getElementById('sosOverlay').style.display = show ? 'flex' : 'none'; }
+
+    function updateStartDate(val) {
+        localStorage.setItem('cp_date', val);
+        startDate = val;
+        updateDisplay();
+    }
+
+    function updateDisplay() {
+        const days = Math.floor((new Date() - new Date(startDate)) / 86400000);
+        document.getElementById('daysCounter').innerText = Math.max(0, days);
+    }
+
+    function saveEntry() {
+        const text = document.getElementById('noteContent').value;
+        const moods = Array.from(document.querySelectorAll('.chip.selected')).map(c => c.innerText);
+        if(!text && moods.length === 0) return;
+
+        entries.unshift({ id: Date.now(), date: new Date().toLocaleDateString(), moods, text });
+        localStorage.setItem('cp_entries', JSON.stringify(entries));
+        document.getElementById('noteContent').value = '';
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+        render();
+    }
+
+    function deleteEntry(id) {
+        if(confirm("Delete this entry?")) {
+            entries = entries.filter(e => e.id !== id);
+            localStorage.setItem('cp_entries', JSON.stringify(entries));
+            render();
+        }
+    }
+
+    function exportData() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(entries));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "clearpath_backup.json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    }
+
+    function render() {
+        const container = document.getElementById('history');
+        container.innerHTML = '<h3 style="margin-top:20px; color:var(--text-muted)">History</h3>';
+        entries.forEach(e => {
+            const div = document.createElement('div');
+            div.className = 'entry';
+            div.innerHTML = `
+                <span class="del-entry" onclick="deleteEntry(${e.id})">✕</span>
+                <div style="font-size:0.8rem; color:var(--text-muted);">${e.date}</div>
+                <div style="font-weight:600; color:var(--primary);">${e.moods.join(' · ')}</div>
+                <div style="margin-top:6px;">${e.text}</div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    init();
+</script>
+</body>
+</html>
