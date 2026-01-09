@@ -1,13 +1,13 @@
 {
-  "name": "ClearPath",
-  "short_name": "ClearPath",
+  "name": "Recovery Cherub",
+  "short_name": "Cherub",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#f8faf9",
-  "theme_color": "#2e7d32",
+  "background_color": "#1a1621",
+  "theme_color": "#6a1b9a",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2304/2304226.png",
+      "src": "content://media/external/downloads/1000007321",
       "sizes": "512x512",
       "type": "image/png"
     }
