@@ -3,19 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClearPath - Professional Sobriety Tool</title>
+    <title>ClearPath - Celebration Edition</title>
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { 
             --primary: #2e7d32; --primary-light: #e8f5e9;
             --danger: #d32f2f; --bg: #f8faf9; 
             --text-main: #1a1c1b; --text-muted: #5f6368;
+            --accent: #fbc02d;
         }
         
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            font-family: 'Segoe UI', Roboto, sans-serif; 
             background: var(--bg); color: var(--text-main); 
             margin: 0; padding: 20px; padding-bottom: 120px;
             display: flex; flex-direction: column; align-items: center;
@@ -23,59 +25,56 @@
 
         .container { width: 100%; max-width: 480px; }
         .card { 
-            background: white; padding: 24px; border-radius: 24px; 
+            background: white; padding: 20px; border-radius: 24px; 
             box-shadow: 0 10px 25px rgba(0,0,0,0.03); margin-bottom: 20px; 
             border: 1px solid rgba(0,0,0,0.05);
         }
 
-        .hero { text-align: center; background: linear-gradient(135deg, #2e7d32, #43a047); color: white; }
+        .hero { text-align: center; background: linear-gradient(135deg, #2e7d32, #43a047); color: white; padding: 30px 20px; position: relative; overflow: hidden; }
         .counter-num { font-size: 3.5rem; display: block; line-height: 1; margin-bottom: 5px; font-weight: 800; }
         
+        .progress-container { background: rgba(255,255,255,0.2); height: 12px; border-radius: 10px; margin-top: 15px; overflow: hidden; }
+        .progress-bar { background: var(--accent); height: 100%; width: 0%; transition: width 1s ease-in-out; }
+
+        .affirmation-card { background: #fff9c4; border: 1px solid #fff59d; text-align: center; color: #795548; font-style: italic; }
+        
         .chip-group { display: flex; gap: 8px; flex-wrap: wrap; margin: 15px 0; }
-        .chip { 
-            padding: 10px 18px; border-radius: 50px; background: #f1f3f4; 
-            font-size: 0.9rem; cursor: pointer; border: 2px solid transparent;
-        }
+        .chip { padding: 10px 18px; border-radius: 50px; background: #f1f3f4; font-size: 0.9rem; cursor: pointer; border: 2px solid transparent; }
         .chip.selected { background: var(--primary-light); border-color: var(--primary); color: var(--primary); font-weight: 600; }
         
-        textarea { 
-            width: 100%; border: 1px solid #dadce0; border-radius: 16px; 
-            padding: 16px; font-size: 1rem; margin-top: 10px; resize: none; outline: none;
-        }
+        textarea { width: 100%; border: 1px solid #dadce0; border-radius: 16px; padding: 16px; font-size: 1rem; margin-top: 10px; resize: none; outline: none; }
+        .btn-main { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1rem; font-weight: 600; margin-top: 15px; cursor: pointer; }
 
-        .btn-main { 
-            width: 100%; background: var(--primary); color: white; border: none; 
-            padding: 16px; border-radius: 16px; font-size: 1rem; font-weight: 600; 
-            margin-top: 15px; cursor: pointer;
-        }
+        .sos-btn { position: fixed; bottom: 20px; right: 20px; left: 20px; background: var(--danger); color: white; text-align: center; padding: 18px; border-radius: 50px; font-weight: 800; text-transform: uppercase; z-index: 100; box-shadow: 0 8px 20px rgba(211, 47, 47, 0.4); }
 
-        .sos-btn { 
-            position: fixed; bottom: 20px; right: 20px; left: 20px;
-            background: var(--danger); color: white; text-align: center;
-            padding: 18px; border-radius: 50px; font-weight: 800; text-transform: uppercase;
-            box-shadow: 0 8px 20px rgba(211, 47, 47, 0.4); z-index: 100; cursor: pointer;
-        }
-
-        .overlay { 
-            position: fixed; inset: 0; background: rgba(0,0,0,0.8); 
-            display: none; justify-content: center; align-items: center; z-index: 200; padding: 20px;
-        }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 200; padding: 20px; }
         .modal { background: white; border-radius: 24px; padding: 24px; width: 100%; max-width: 400px; }
         
         .entry { background: white; padding: 16px; border-radius: 16px; margin-bottom: 12px; border-left: 6px solid var(--primary); position: relative; }
         .del-entry { position: absolute; top: 10px; right: 10px; color: #ccc; cursor: pointer; }
 
-        .backup-btn { background: none; border: 1px solid #ccc; color: #888; padding: 8px; border-radius: 8px; margin-top: 20px; font-size: 0.8rem; cursor: pointer; }
+        .goal-label { font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; color: #666; display: block; }
+        .goal-input { border: 1px solid #ddd; padding: 5px; border-radius: 8px; width: 60px; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="card hero">
+    <div class="card hero" id="heroCard">
         <span id="daysCounter" class="counter-num">0</span>
         <div style="opacity: 0.9; font-weight: 500;">DAYS SOBER</div>
+        
+        <div class="progress-container">
+            <div id="progressBar" class="progress-bar"></div>
+        </div>
+        <div id="goalStatus" style="font-size: 0.8rem; margin-top: 8px; opacity: 0.9;">Progress to Milestone</div>
+
         <input type="date" id="datePicker" onchange="updateStartDate(this.value)" 
-               style="margin-top:15px; background: rgba(255,255,255,0.2); border:none; color:white; padding:5px 10px; border-radius:8px;">
+               style="margin-top:15px; background: rgba(255,255,255,0.2); border:none; color:white; padding:5px 10px; border-radius:8px; font-size: 0.8rem;">
+    </div>
+
+    <div class="card affirmation-card">
+        <div id="affirmationText" style="font-size: 1.1rem; line-height: 1.4;">"One day at a time."</div>
     </div>
 
     <div class="card">
@@ -88,40 +87,60 @@
             <div class="chip" onclick="this.classList.toggle('selected')">👥 Lonely</div>
             <div class="chip" onclick="this.classList.toggle('selected')">😴 Tired</div>
         </div>
-        <textarea id="noteContent" rows="3" placeholder="What's on your mind?"></textarea>
+        <textarea id="noteContent" rows="3" placeholder="Notes or triggers..."></textarea>
         <button class="btn-main" onclick="saveEntry()">Save Entry</button>
     </div>
 
+    <div class="card">
+        <label class="goal-label">Next Milestone (Days):</label>
+        <input type="number" id="goalInput" class="goal-input" value="30" onchange="updateGoal(this.value)">
+    </div>
+
     <div id="history"></div>
-    
-    <center>
-        <button class="backup-btn" onclick="exportData()">📥 Download My Backup</button>
-    </center>
 </div>
 
 <div class="sos-btn" onclick="toggleSOS(true)">SOS Help</div>
 
 <div class="overlay" id="sosOverlay" onclick="toggleSOS(false)">
     <div class="modal" onclick="event.stopPropagation()">
-        <h2 style="color:var(--danger)">Urge Surfing</h2>
-        <p>Cravings usually last 15–30 minutes. Let's get through this.</p>
-        <p>1. <strong>Check HALT:</strong> Hungry? Angry? Lonely? Tired?</p>
+        <h2 style="color:var(--danger)">Stay Strong</h2>
+        <p>1. <strong>HALT:</strong> Hungry? Angry? Lonely? Tired?</p>
         <p>2. <strong>Breathe:</strong> 4s In, 7s Hold, 8s Out.</p>
         <button class="btn-main" style="background:#444" onclick="toggleSOS(false)">Close</button>
     </div>
 </div>
 
 <script>
+    const affirmations = [
+        "I am stronger than my strongest urge.", "Recovery is a journey, not a destination.",
+        "I choose my health today.", "My past does not define my future.",
+        "Progress, not perfection.", "I am worthy of a life free from addiction.",
+        "One day, one hour, one minute at a time."
+    ];
+
     let entries = JSON.parse(localStorage.getItem('cp_entries')) || [];
     let startDate = localStorage.getItem('cp_date') || new Date().toISOString().split('T')[0];
+    let goalDays = localStorage.getItem('cp_goal') || 30;
 
     function init() {
         document.getElementById('datePicker').value = startDate;
+        document.getElementById('goalInput').value = goalDays;
         updateDisplay();
         render();
+        setDailyAffirmation();
     }
 
-    function toggleSOS(show) { document.getElementById('sosOverlay').style.display = show ? 'flex' : 'none'; }
+    function setDailyAffirmation() {
+        const today = new Date().toDateString();
+        const storedDate = localStorage.getItem('affDate');
+        let currentAff = localStorage.getItem('currentAff');
+        if (storedDate !== today || !currentAff) {
+            currentAff = affirmations[Math.floor(Math.random() * affirmations.length)];
+            localStorage.setItem('affDate', today);
+            localStorage.setItem('currentAff', currentAff);
+        }
+        document.getElementById('affirmationText').innerText = `"${currentAff}"`;
+    }
 
     function updateStartDate(val) {
         localStorage.setItem('cp_date', val);
@@ -129,16 +148,32 @@
         updateDisplay();
     }
 
+    function updateGoal(val) {
+        localStorage.setItem('cp_goal', val);
+        goalDays = val;
+        updateDisplay();
+    }
+
     function updateDisplay() {
-        const days = Math.floor((new Date() - new Date(startDate)) / 86400000);
-        document.getElementById('daysCounter').innerText = Math.max(0, days);
+        const diff = new Date() - new Date(startDate);
+        const days = Math.max(0, Math.floor(diff / 86400000));
+        document.getElementById('daysCounter').innerText = days;
+        
+        const percent = Math.min(100, (days / goalDays) * 100);
+        document.getElementById('progressBar').style.width = percent + "%";
+        document.getElementById('goalStatus').innerText = `Progress to ${goalDays} Days (${Math.round(percent)}%)`;
+
+        // Celebrate if goal hit!
+        if (percent >= 100 && localStorage.getItem('lastCelebrated') != goalDays) {
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            localStorage.setItem('lastCelebrated', goalDays);
+        }
     }
 
     function saveEntry() {
         const text = document.getElementById('noteContent').value;
         const moods = Array.from(document.querySelectorAll('.chip.selected')).map(c => c.innerText);
         if(!text && moods.length === 0) return;
-
         entries.unshift({ id: Date.now(), date: new Date().toLocaleDateString(), moods, text });
         localStorage.setItem('cp_entries', JSON.stringify(entries));
         document.getElementById('noteContent').value = '';
@@ -152,16 +187,6 @@
             localStorage.setItem('cp_entries', JSON.stringify(entries));
             render();
         }
-    }
-
-    function exportData() {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(entries));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", "clearpath_backup.json");
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
     }
 
     function render() {
@@ -179,6 +204,8 @@
             container.appendChild(div);
         });
     }
+
+    function toggleSOS(show) { document.getElementById('sosOverlay').style.display = show ? 'flex' : 'none'; }
 
     init();
 </script>
