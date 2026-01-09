@@ -154,12 +154,19 @@
         updateDisplay();
     }
 
-    function updateDisplay() {
+        function updateDisplay() {
         const diff = new Date() - new Date(startDate);
         const days = Math.max(0, Math.floor(diff / 86400000));
         document.getElementById('daysCounter').innerText = days;
         
-        const percent = Math.min(100, (days / goalDays) * 100);
+        // Fix: Handle 0 goal to avoid NaN%
+        let percent = 0;
+        if (goalDays > 0) {
+            percent = Math.min(100, (days / goalDays) * 100);
+        } else {
+            percent = 100; // If goal is 0, you've already hit it!
+        }
+        
         document.getElementById('progressBar').style.width = percent + "%";
         document.getElementById('goalStatus').innerText = `Progress to ${goalDays} Days (${Math.round(percent)}%)`;
 
